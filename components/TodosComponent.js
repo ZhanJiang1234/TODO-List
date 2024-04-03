@@ -1,6 +1,6 @@
 // components/TodosComponent.js
 import React, { useState, useEffect } from 'react';
-import { Image, View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { Share, Image, View, Text, TextInput, Button, FlatList, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { addTodo, removeTodoAsync, replaceTodos, updateTodo, updateTodoTextAsync } from '../store/todosSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -49,7 +49,7 @@ export default function TodosComponent() {
 
         if (!result.cancelled && result.assets) {
             setImageUri(result.assets[0].uri);
-            console.log('Photo taken, imageUri:', result.assets[0].uri); // 现在使用 result.assets[0].uri
+            console.log('Photo taken, imageUri:', result.assets[0].uri);
         }
     };
     // 从相册选择图片的功能
@@ -67,7 +67,7 @@ export default function TodosComponent() {
     };
     const handleImagePress = (uri) => {
         setSelectedImageUri(uri);
-        setModalVisible(true); // 设置模态框为可见
+        setModalVisible(true);
     };
     const handleAddTodo = async () => {
         const now = new Date();
@@ -96,7 +96,24 @@ export default function TodosComponent() {
         await AsyncStorage.setItem('todos', JSON.stringify(updatedTodos));
         setEditableTodoId(null);
     };
-
+    const onShare = async (todo) => {
+        try {
+            const result = await Share.share({
+                message: `Check out my todo: ${todo.text} | Weather when added: ${todo.weather}`,
+            });
+            if (result.action === Share.sharedAction) {
+                if (result.activityType) {
+                    console.log("Shared with activity type: ", result.activityType);
+                } else {
+                    console.log("Shared");
+                }
+            } else if (result.action === Share.dismissedAction) {
+                console.log("Share dismissed");
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    };
     return (
         <View style={styles.container}>
             <TextInput
@@ -107,7 +124,6 @@ export default function TodosComponent() {
             />
             <View style={styles.buttonRow}>
                 <TouchableOpacity onPress={handleTakePhoto} style={styles.button}>
-                    {/* 使用图标代替文字按钮 */}
                     <Text style={styles.buttonText}>📷 Take Photo</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={pickImageFromGallery} style={styles.button}>
@@ -144,10 +160,14 @@ export default function TodosComponent() {
                             <TouchableOpacity onPress={() => dispatch(removeTodoAsync(item.id))} style={[styles.button, styles.leftButton]}>
                                 <Text style={styles.buttonText}>✔️ Done</Text>
                             </TouchableOpacity>
+                            <TouchableOpacity onPress={() => onShare(item)} style={[styles.button, styles.rightButton]}>
+                                <Text style={styles.buttonText}>📤 Share</Text>
+                            </TouchableOpacity>
                             {editableTodoId !== item.id && (
                                 <TouchableOpacity onPress={() => { setEditableTodoId(item.id); setEditedText(item.text); }} style={[styles.button, styles.rightButton]}>
                                     <Text style={styles.buttonText}>✏️ Edit</Text>
                                 </TouchableOpacity>
+
                             )}
                         </View>
                     </View>
